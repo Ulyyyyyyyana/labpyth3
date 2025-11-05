@@ -7,9 +7,12 @@
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QFont
 import logging
+import datetime as dt
+import numpy as np
 
 from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
+import matplotlib.dates as mdates
 
 from .models import Recipe
 from .logger_config import QTextEditHandler
@@ -20,7 +23,7 @@ class ModernMainWindow(QMainWindow):
         super().__init__()
         self.controller = controller
         self.logger = logger or logging.getLogger(__name__)
-        self.setWindowTitle("🍳 Генератор рецептов")
+        self.setWindowTitle("Генератор рецептов")
         self.resize(950, 650)
 
         self.setStyleSheet("""
@@ -68,20 +71,20 @@ class ModernMainWindow(QMainWindow):
 
         self.tabs = QTabWidget()
 
-        # 📋 Вкладка рецептов
+        # Вкладка рецептов
         self.tab_recipes = QWidget()
         self._build_recipes_tab()
-        self.tabs.addTab(self.tab_recipes, "📖 Рецепты")
+        self.tabs.addTab(self.tab_recipes, "Рецепты")
 
-        # ➕ Вкладка добавления
+        # Вкладка добавления
         self.tab_add = QWidget()
         self._build_add_tab()
-        self.tabs.addTab(self.tab_add, "➕ Добавить")
+        self.tabs.addTab(self.tab_add, "Добавить")
 
-        # 🎲 Генератор
+        # Генератор
         self.tab_tools = QWidget()
         self._build_tools_tab()
-        self.tabs.addTab(self.tab_tools, "🎲 Генератор")
+        self.tabs.addTab(self.tab_tools, "Генератор")
 
         layout.addWidget(self.tabs)
         central.setLayout(layout)
@@ -89,7 +92,7 @@ class ModernMainWindow(QMainWindow):
         self.setStatusBar(QStatusBar())
 
     # -----------------------------
-    # 📊 Таблица + график активности
+    # Таблица + график активности
     # -----------------------------
     def _build_recipes_tab(self):
         layout = QVBoxLayout()
@@ -109,9 +112,9 @@ class ModernMainWindow(QMainWindow):
         
         # Кнопки
         btn_layout = QHBoxLayout()
-        self.btn_view = QPushButton("👁 Просмотр")
-        self.btn_edit = QPushButton("✏ Редактировать")
-        self.btn_delete = QPushButton("🗑 Удалить")
+        self.btn_view = QPushButton("Просмотр")
+        self.btn_edit = QPushButton("Редактировать")
+        self.btn_delete = QPushButton("Удалить")
         btn_layout.addWidget(self.btn_view)
         btn_layout.addWidget(self.btn_edit)
         btn_layout.addWidget(self.btn_delete)
@@ -120,7 +123,7 @@ class ModernMainWindow(QMainWindow):
         self.tab_recipes.setLayout(layout)
 
     # -----------------------------
-    # ➕ Добавление рецепта
+    # Добавление рецепта
     # -----------------------------
     def _build_add_tab(self):
         layout = QVBoxLayout()
@@ -130,8 +133,8 @@ class ModernMainWindow(QMainWindow):
         self.input_tags = QLineEdit()
         self.input_ingredients = QTextEdit()
         self.input_steps = QTextEdit()
-        self.btn_add = QPushButton("💾 Добавить рецепт")
-        self.btn_clear = QPushButton("🧹 Очистить")
+        self.btn_add = QPushButton("Добавить рецепт")
+        self.btn_clear = QPushButton("Очистить")
 
         form.addRow("Название:", self.input_title)
         form.addRow("Теги:", self.input_tags)
@@ -150,14 +153,14 @@ class ModernMainWindow(QMainWindow):
         self.tab_add.setLayout(layout)
 
     # -----------------------------
-    # 🎲 Генератор рецептов
+    # Генератор рецептов
     # -----------------------------
     def _build_tools_tab(self):
         layout = QVBoxLayout()
 
         self.input_filter_tags = QLineEdit()
         self.input_filter_tags.setPlaceholderText("Введите тег (например, 'десерт')")
-        self.btn_random = QPushButton("🎲 Случайный рецепт")
+        self.btn_random = QPushButton("Случайный рецепт")
         self.random_recipe_display = QTextBrowser()
 
         layout.addWidget(QLabel("Фильтр по тегу:"))
@@ -201,38 +204,87 @@ class ModernMainWindow(QMainWindow):
             QMessageBox.critical(self, "Ошибка", f"Не удалось загрузить рецепты:\n{e}")
 
     def _update_chart(self):
-        import datetime as dt
-        import matplotlib.dates as mdates
-
         try:
-            data = self.controller.activity_stats()
-
+            stats = self.controller.activity_stats()
             self.figure.clear()
             ax = self.figure.add_subplot(111)
 
-            if data:
-                # Преобразуем ISO-строки в объекты даты
-                dates = [dt.datetime.fromisoformat(d).date() for d in sorted(data.keys())]
-                counts = [data[str(d)] for d in sorted(data.keys())]
-
-                ax.bar(dates, counts, color="#90caf9", edgecolor="#1e88e5", linewidth=1.2)
-                ax.set_title("Активность добавления рецептов", fontsize=11, fontweight="bold")
-                ax.set_xlabel("Дата", fontsize=9)
-                ax.set_ylabel("Количество рецептов", fontsize=9)
-                ax.grid(axis="y", linestyle="--", alpha=0.5)
-
-                # Формат дат
-                ax.xaxis.set_major_formatter(mdates.DateFormatter('%d.%m'))
-                self.figure.autofmt_xdate(rotation=45)
-            else:
+            if not stats:
                 ax.text(0.5, 0.5, "Нет данных для отображения",
                         ha="center", va="center", fontsize=11, color="gray")
+                ax.set_xticks([])
+                ax.set_yticks([])
+            else:
+                # Фильтруем и сортируем данные
+                valid_data = {}
+                for date_str, count in stats.items():
+                    if count > 0:  # Показываем только даты с рецептами
+                        try:
+                            # Преобразуем строку в дату
+                            if 'T' in date_str:
+                                date_obj = dt.datetime.fromisoformat(date_str).date()
+                            else:
+                                date_obj = dt.datetime.strptime(date_str, '%Y-%m-%d').date()
+                            valid_data[date_obj] = count
+                        except (ValueError, TypeError) as e:
+                            self.logger.warning(f"Пропущена некорректная дата: {date_str}, ошибка: {e}")
+                            continue
+
+                if not valid_data:
+                    ax.text(0.5, 0.5, "Нет данных для отображения",
+                            ha="center", va="center", fontsize=11, color="gray")
+                    ax.set_xticks([])
+                    ax.set_yticks([])
+                else:
+                    # Сортируем по дате
+                    dates = sorted(valid_data.keys())
+                    counts = [valid_data[d] for d in dates]
+
+                    # Ограничиваем количество отображаемых точек (последние 30 дней)
+                    if len(dates) > 30:
+                        dates = dates[-30:]
+                        counts = counts[-30:]
+
+                    y = np.array(counts, dtype=int)
+
+                    # Столбчатая диаграмма
+                    bars = ax.bar(dates, y, color="#64b5f6", edgecolor="#1976d2", alpha=0.85, width=0.8)
+
+                    # Добавляем подписи над столбцами
+                    for bar in bars:
+                        height = bar.get_height()
+                        if height > 0:
+                            ax.text(bar.get_x() + bar.get_width()/2, height + 0.1,
+                                    str(int(height)), ha='center', va='bottom', fontsize=9)
+
+                    # Стиль графика (без эмодзи)
+                    ax.set_title("Активность добавления рецептов", fontsize=12, pad=10, fontweight="bold")
+                    ax.set_ylabel("Количество рецептов", fontsize=10)
+                    ax.set_xlabel("Дата добавления", fontsize=10)
+                    ax.grid(axis="y", linestyle="--", alpha=0.5)
+
+                    # Форматирование дат
+                    ax.xaxis.set_major_formatter(mdates.DateFormatter("%d.%m"))
+                    
+                    # Настройка осей
+                    ax.set_ylim(bottom=0, top=max(y) * 1.2 if max(y) > 0 else 5)
+                    
+                    # Автоматическое форматирование дат
+                    self.figure.autofmt_xdate(rotation=45)
 
             self.figure.tight_layout()
             self.canvas.draw()
 
         except Exception as e:
             self.logger.error(f"Ошибка при построении графика: {e}")
+            # Показываем сообщение об ошибке в графике
+            self.figure.clear()
+            ax = self.figure.add_subplot(111)
+            ax.text(0.5, 0.5, f"Ошибка построения графика:\n{e}", 
+                    ha="center", va="center", fontsize=10, color="red", wrap=True)
+            ax.set_xticks([])
+            ax.set_yticks([])
+            self.canvas.draw()
 
     def on_add(self):
         title = self.input_title.text().strip()
@@ -336,7 +388,7 @@ class RecipeDialog(QDialog):
 
         btn_layout = QHBoxLayout()
         if self.editable:
-            btn_save = QPushButton("💾 Сохранить")
+            btn_save = QPushButton("Сохранить")
             btn_save.clicked.connect(self.accept)
             btn_layout.addWidget(btn_save)
         btn_close = QPushButton("Закрыть")
