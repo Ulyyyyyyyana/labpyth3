@@ -10,7 +10,8 @@ import logging
 from PySide6.QtWidgets import QApplication
 from .models import RecipeDB
 from .controllers import RecipeController
-from .gui import MainWindow
+from .gui import ModernMainWindow
+
 from .logger_config import setup_root_logger, QTextEditHandler
 
 def run():
@@ -25,7 +26,8 @@ def run():
     # Контроллер
     controller = RecipeController(db=db, logger=logger)
     # Окно
-    mw = MainWindow(controller=controller, logger=logger)
+    mw = ModernMainWindow(controller=controller, logger=logger)
+
 
     # Перевыставим handler для записи в виджет (MainWindow создает QTextEdit handler внутри)
     # Показываем окно

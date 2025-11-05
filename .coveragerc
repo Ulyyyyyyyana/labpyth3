@@ -1,0 +1,6 @@
+[run]
+omit =
+    app/gui.py
+    app/main.py
+    app/logger_config.py
+    app/resources.py
