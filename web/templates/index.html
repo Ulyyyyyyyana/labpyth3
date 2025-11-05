@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>🍳 Генератор рецептов</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background-color: #f9fafc;
+      margin: 0;
+      padding: 0;
+      color: #333;
+    }
+    header {
+      background-color: #82b1ff;
+      color: white;
+      padding: 16px;
+      text-align: center;
+      font-size: 1.4rem;
+      font-weight: bold;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+    }
+    main {
+      max-width: 900px;
+      margin: 20px auto;
+      background: white;
+      border-radius: 12px;
+      padding: 20px 30px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    h2 {
+      color: #1976d2;
+      border-bottom: 2px solid #e3f2fd;
+      padding-bottom: 4px;
+    }
+    form {
+      margin-bottom: 20px;
+    }
+    input, textarea {
+      width: 100%;
+      padding: 8px;
+      margin: 6px 0;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+    }
+    button {
+      background-color: #42a5f5;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      padding: 8px 16px;
+      cursor: pointer;
+      font-weight: 600;
+      margin-right: 8px;
+    }
+    button:hover {
+      background-color: #2196f3;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+    }
+    th, td {
+      border: 1px solid #ddd;
+      padding: 8px;
+      text-align: left;
+    }
+    th {
+      background-color: #e3f2fd;
+    }
+    .card {
+      border: 1px solid #ddd;
+      padding: 15px;
+      border-radius: 8px;
+      background: #f8f9fa;
+      margin-top: 10px;
+    }
+    canvas {
+      margin-top: 20px;
+    }
+  </style>
+</head>
+<body>
+  <header>🍳 Генератор рецептов</header>
+  <main>
+    <!-- Добавление рецепта -->
+    <section>
+      <h2>Добавить рецепт</h2>
+      <form action="/add" method="post">
+        <label>Название:</label>
+        <input type="text" name="title" required>
+        <label>Ингредиенты:</label>
+        <textarea name="ingredients" rows="3"></textarea>
+        <label>Шаги:</label>
+        <textarea name="steps" rows="3"></textarea>
+        <label>Теги:</label>
+        <input type="text" name="tags" placeholder="например: десерт, быстро">
+        <button type="submit">💾 Добавить</button>
+      </form>
+    </section>
+
+    <!-- Случайный рецепт -->
+    <section>
+      <h2>🎲 Случайный рецепт</h2>
+      <form action="/random" method="get">
+        <input type="text" name="tag" placeholder="Введите тег (необязательно)">
+        <button type="submit">Сгенерировать</button>
+      </form>
+      {% if random_recipe %}
+      <div class="card">
+        <h3>{{ random_recipe.title }}</h3>
+        <p><b>Теги:</b> {{ random_recipe.tags }}</p>
+        <p><b>Ингредиенты:</b><br>{{ random_recipe.ingredients }}</p>
+        <p><b>Шаги:</b><br>{{ random_recipe.steps }}</p>
+      </div>
+      {% endif %}
+    </section>
+
+    <!-- Таблица рецептов -->
+    <section>
+      <h2>📖 Все рецепты</h2>
+      <table>
+        <thead>
+          <tr><th>ID</th><th>Название</th><th>Теги</th><th>Дата</th></tr>
+        </thead>
+        <tbody>
+          {% for r in recipes %}
+          <tr>
+            <td>{{ r.id }}</td>
+            <td>{{ r.title }}</td>
+            <td>{{ r.tags }}</td>
+            <td>{{ r.created_at }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </section>
+
+    <!-- График активности -->
+    <section>
+      <h2>📈 Активность добавления рецептов</h2>
+      <canvas id="activityChart" height="120"></canvas>
+    </section>
+  </main>
+
+  <script>
+  const stats = {{ stats_json | safe }};
+  const labels = Object.keys(stats);
+  const values = Object.values(stats);
+
+  const ctx = document.getElementById('activityChart');
+  if (ctx && labels.length > 0) {
+    new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: labels,
+        datasets: [{
+          label: 'Количество рецептов',
+          data: values,
+          backgroundColor: '#64b5f6'
+        }]
+      },
+      options: {
+        responsive: true,
+        scales: {
+          y: { beginAtZero: true, ticks: { precision: 0 } }
+        },
+        plugins: {
+          legend: { display: false }
+        }
+      }
+    });
+  }
+</script>
+
+</body>
+</html>

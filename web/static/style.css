@@ -1,0 +1,76 @@
+body {
+    font-family: "Segoe UI", sans-serif;
+    background-color: #f9f9fb;
+    margin: 0;
+    padding: 20px;
+    color: #333;
+}
+
+.container {
+    max-width: 900px;
+    margin: auto;
+    background: white;
+    border-radius: 10px;
+    padding: 25px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+h1, h2 {
+    text-align: center;
+    color: #333;
+}
+
+.form input, .form textarea, .form button {
+    width: 100%;
+    margin: 6px 0;
+    padding: 10px;
+    border-radius: 6px;
+    border: 1px solid #ccc;
+    box-sizing: border-box;
+}
+
+button {
+    background-color: #82b1ff;
+    color: white;
+    font-weight: bold;
+    border: none;
+    cursor: pointer;
+}
+button:hover {
+    background-color: #64b5f6;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 10px 0 20px;
+}
+th, td {
+    border-bottom: 1px solid #ddd;
+    padding: 8px;
+    text-align: left;
+}
+th {
+    background-color: #f0f0f0;
+}
+
+.recipe-card {
+    background-color: #eef5ff;
+    border-left: 4px solid #64b5f6;
+    padding: 15px;
+    border-radius: 8px;
+    margin-top: 20px;
+}
+
+.message {
+    background: #e0ffe0;
+    padding: 8px;
+    border-radius: 6px;
+}
+
+.error {
+    background: #ffe0e0;
+    color: #900;
+    padding: 8px;
+    border-radius: 6px;
+}
